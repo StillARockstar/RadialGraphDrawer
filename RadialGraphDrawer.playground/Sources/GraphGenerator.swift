@@ -1,5 +1,4 @@
 import UIKit
-import PlaygroundSupport
 
 extension UIView {
     func asImage(size: CGSize) -> UIImage {
@@ -43,6 +42,18 @@ class RadialGraphView: UIView {
 
         context.setStrokeColor(options.arcColor.cgColor)
         drawArc(in: context, startPoint: startPoint, endPoint: endPoint)
+
+        if percent > 1.0 {
+            let borderStartPoint = 2 * CGFloat.pi * (circleFill - (options.borderWidthPercent - 0.01)) + startPoint
+            let borderOverlayPoint = 2 * CGFloat.pi * (circleFill - options.borderWidthPercent) + startPoint
+            let borderEndPoint = 2 * CGFloat.pi * (circleFill + options.borderWidthPercent) + startPoint
+
+            context.setStrokeColor(options.borderColor.cgColor)
+            drawArc(in: context, startPoint: borderStartPoint, endPoint: borderEndPoint)
+
+            context.setStrokeColor(options.arcColor.cgColor)
+            drawArc(in: context, startPoint: borderOverlayPoint, endPoint: endPoint)
+        }
     }
 
     private func drawArc(in context: CGContext, startPoint: CGFloat, endPoint: CGFloat) {
@@ -73,13 +84,14 @@ public class RadialGraphGenerator {
     }
 
     public func saveAll() {
-        print("Save to: \(playgroundSharedDataDirectory)")
-        for i in 0..<101 {
+        try! FileManager.default.createDirectory(at: options.baseOutputURL, withIntermediateDirectories: true, attributes: nil)
+        for i in 0..<201 {
             let graphImage = graph(for: Float(i) / Float(100))
             let data = graphImage.pngData()
-            let path = playgroundSharedDataDirectory.appendingPathComponent("\(filePrefixName)\(i)\(fileSufixName).png")
+            let path = options.baseOutputURL.appendingPathComponent("\(filePrefixName)\(i)\(fileSufixName).png")
             try! data?.write(to: path)
         }
+        print("Saved to: \(options.baseOutputURL)")
     }
 
     func graph(for percent: Float) -> UIImage {
@@ -91,15 +103,21 @@ public class RadialGraphGenerator {
 
 
 public struct GraphOptions {
+    let baseOutputURL: URL
     let backgroundColor: UIColor
     let circleColor: UIColor
-    let circleWidth: CGFloat
     let arcColor: UIColor
+    let borderColor: UIColor
+    let circleWidth: CGFloat
+    let borderWidthPercent: CGFloat
 
-    public init(backgroundColor: UIColor, circleColor: UIColor, circleWidth: CGFloat, arcColor: UIColor) {
+    public init(baseOutputURL: URL, backgroundColor: UIColor, circleColor: UIColor, arcColor: UIColor, borderColor: UIColor, circleWidth: CGFloat, borderWidthPercent: CGFloat) {
+        self.baseOutputURL = baseOutputURL
         self.backgroundColor = backgroundColor
         self.circleColor = circleColor
         self.circleWidth = circleWidth
         self.arcColor = arcColor
+        self.borderColor = borderColor
+        self.borderWidthPercent = borderWidthPercent
     }
 }
